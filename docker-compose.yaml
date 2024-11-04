@@ -1,0 +1,45 @@
+---
+
+services:
+  postgres_db:
+    container_name: "genesis-postgres"
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./deploy/postgres_db:/docker-entrypoint-initdb.d
+      - ./volumes/postgres_db:/var/lib/postgresql/data/
+    networks:
+      - genesis-backend-net
+    restart: unless-stopped
+
+  server:
+    container_name: "genesis-api-server"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: "bash -c 'python manage.py migrate && echo yes | python manage.py collectstatic && uwsgi --master --http :8099 --module genesis.wsgi'"
+    ports:
+      - "8099:8099"
+    depends_on:
+      - postgres_db
+    env_file:
+      - .env
+    volumes:
+      - ./genesis:/server/genesis
+      - ./volumes/data:/server/volumes/data
+    networks:
+      genesis-backend-net:
+        ipv4_address: 177.129.0.57
+
+    restart: unless-stopped
+
+networks:
+  genesis-backend-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 177.129.0.0/24
