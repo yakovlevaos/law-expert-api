@@ -11,6 +11,7 @@ from genesis.apps.games.models import (
     Duration,
     ScreenShot,
     Competencies,
+    Mode,
 )
 
 
@@ -77,5 +78,10 @@ class DurationAdmin(admin.ModelAdmin):
 
 
 @admin.register(Competencies)
-class CompetenciesAdmin(admin.ModelAdmin):
+class CompetenceAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Mode)
+class ModeAdmin(admin.ModelAdmin):
     pass

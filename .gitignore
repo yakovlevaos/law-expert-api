@@ -178,6 +178,7 @@ pyrightconfig.json
 
 volumes/
 .DS_Store
+staticfiles/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 

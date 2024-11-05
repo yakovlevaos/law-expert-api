@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from genesis.apps.games.models import Author, Game, ScreenShot, Duration, Platform
+from genesis.apps.games.models import Author, Game, ScreenShot, Duration, Platform, Mode
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -57,6 +57,15 @@ class CompetenciesSerializer(serializers.ModelSerializer):
         ]
 
 
+class ModesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Mode
+        fields = [
+            "id",
+            "name",
+        ]
+
+
 class GameSerializer(serializers.ModelSerializer):
     author = AuthorSerializer()
     duration_type = DurationSerializer()
@@ -66,6 +75,7 @@ class GameSerializer(serializers.ModelSerializer):
     genres = GenresSerializer(read_only=True, many=True)
     platforms = PlatformSerializer(read_only=True, many=True)
     competencies = CompetenciesSerializer(read_only=True, many=True)
+    modes = ModesSerializer(read_only=True, many=True)
 
     class Meta:
         model = Game
@@ -74,7 +84,6 @@ class GameSerializer(serializers.ModelSerializer):
             "titles_list",
             "author",
             "description",
-            "full_description",
             "screen_shots_list",
             "cover_image",
             "duration",
@@ -82,6 +91,7 @@ class GameSerializer(serializers.ModelSerializer):
             "genres",
             "competencies",
             "platforms",
+            "modes",
         ]
 
     def get_screen_shots_list(self, obj):
