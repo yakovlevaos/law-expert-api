@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "genesis.apps.games",
     "rest_framework",
     "drf_spectacular",
+    "corsheaders",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
