@@ -18,3 +18,9 @@ migrate:
 
 dev:
 	python manage.py runserver
+
+dump:
+	docker exec -i genesis-postgres /bin/bash -c "pg_dump --username postgres genesis" > ./volumes/dump_051124.sql
+
+restore:
+	cat ./volumes/dump_051124.sql | docker exec -i genesis-postgres psql -U postgres --dbname=genesis
