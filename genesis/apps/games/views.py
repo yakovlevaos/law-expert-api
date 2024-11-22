@@ -1,3 +1,4 @@
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.viewsets import ModelViewSet
 
 from genesis.apps.games.models import (
@@ -20,10 +21,17 @@ from genesis.apps.games.serializers import (
 )
 
 
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 500
+
+
 class GameViewSet(ModelViewSet):
     serializer_class = GameSerializer
     queryset = Game.objects.all()
     http_method_names = ["get", "head"]
+    pagination_class = StandardResultsSetPagination
 
 
 class GenreViewSet(ModelViewSet):
