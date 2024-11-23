@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from genesis.apps.games.models import Author, Game, ScreenShot, Duration, Platform, Mode
+from apps.games.models import Author, Game, ScreenShot, Duration, Platform, Mode
 
 
 class AuthorSerializer(serializers.ModelSerializer):

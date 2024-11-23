@@ -1,7 +1,7 @@
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.viewsets import ModelViewSet
 
-from genesis.apps.games.models import (
+from apps.games.models import (
     Game,
     Genre,
     Mode,
@@ -10,7 +10,7 @@ from genesis.apps.games.models import (
     Competencies,
     Author,
 )
-from genesis.apps.games.serializers import (
+from apps.games.serializers import (
     GameSerializer,
     GenresSerializer,
     ModesSerializer,

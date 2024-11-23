@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: "bash -c 'python manage.py migrate && echo yes | python manage.py collectstatic && uwsgi --master --http :8099 --module genesis.wsgi'"
+    command: "bash -c 'python manage.py migrate && echo yes | python manage.py collectstatic && uwsgi --processes=5 --harakiri=20 --max-requests=5000 --master --http :8099 --module config.wsgi'"
     ports:
       - "8099:8099"
     depends_on:
@@ -32,8 +32,8 @@ services:
     env_file:
       - .env
     volumes:
-      - ./genesis:/server/genesis
-      - ./volumes/data:/server/volumes/data
+      - ./src:/server
+      - ./volumes/data:/volumes/data
     networks:
       genesis-backend-net:
         ipv4_address: 177.129.0.57

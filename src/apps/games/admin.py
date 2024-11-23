@@ -3,7 +3,7 @@ from django.contrib.admin.widgets import AdminFileWidget
 from django.db import models
 from django.utils.html import format_html
 
-from genesis.apps.games.models import (
+from apps.games.models import (
     Author,
     Genre,
     Platform,

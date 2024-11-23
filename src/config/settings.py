@@ -6,7 +6,7 @@ import environ
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-environ.Env.read_env(BASE_DIR / ".env")
+environ.Env.read_env(BASE_DIR / "../.env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,7 +26,7 @@ ALLOWED_HOSTS = ["*"]
 INSTALLED_APPS = [
     "nplusone.ext.django",
     "corsheaders",
-    "genesis.apps.games",
+    "apps.games.apps.GamesConfig",
     "rest_framework",
     "drf_spectacular",
     "django.contrib.admin",
@@ -63,7 +63,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "genesis.urls"
+ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
     {
@@ -81,7 +81,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "genesis.wsgi.application"
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # Database
@@ -126,8 +126,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 MEDIA_URL = "cdn/"
 
-STATIC_ROOT = BASE_DIR / "volumes/data/static"
-MEDIA_ROOT = BASE_DIR / "volumes/data/cdn"
+STATIC_ROOT = BASE_DIR / "../volumes/data/static"
+MEDIA_ROOT = BASE_DIR / "../volumes/data/cdn"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

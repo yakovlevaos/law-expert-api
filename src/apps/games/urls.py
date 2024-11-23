@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
-from genesis.apps.games.views import (
+from apps.games.views import (
     GameViewSet,
     DurationViewSet,
     ModeViewSet,

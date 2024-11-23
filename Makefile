@@ -1,3 +1,5 @@
+include .env
+
 deps:
 	poetry install
 
@@ -17,7 +19,7 @@ migrate:
 	python manage.py migrate
 
 dev:
-	python manage.py runserver
+	python src/manage.py runserver
 
 dump:
 	docker exec -i genesis-postgres /bin/bash -c "pg_dump --username postgres genesis" > ./volumes/dump_051124.sql

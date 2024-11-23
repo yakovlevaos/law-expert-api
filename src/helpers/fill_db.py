@@ -3265,12 +3265,12 @@ raw_games = [
 if __name__ == "__main__":
     import os
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "genesis.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
     import django
 
     django.setup()
-    from genesis.apps.games.models import (
+    from apps.games.models import (
         Genre,
         Duration,
         Mode,

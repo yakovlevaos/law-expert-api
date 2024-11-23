@@ -11,4 +11,3 @@ RUN python -m pip install poetry && poetry config virtualenvs.create false
 WORKDIR /server
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root --only main
-COPY .env manage.py ./
