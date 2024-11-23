@@ -94,15 +94,15 @@ class GameSerializer(serializers.ModelSerializer):
             "modes",
         ]
 
-    def get_screen_shots_list(self, obj):
+    def get_screen_shots_list(self, obj) -> list[str]:
         urls = []
         for item in obj.screen_shots.all():
             urls.append(item.screen_shot.url)
         return urls
 
-    def get_titles_list(self, obj):
+    def get_titles_list(self, obj) -> list[str]:
         titles = [x.strip() for x in obj.title.split("\n")]
         return titles
 
-    def get_cover_image(self, obj):
+    def get_cover_image(self, obj) -> str:
         return obj.cover_image.url

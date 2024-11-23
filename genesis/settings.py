@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import environ
@@ -23,6 +24,7 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "nplusone.ext.django",
     "corsheaders",
     "genesis.apps.games",
     "rest_framework",
@@ -50,6 +52,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 MIDDLEWARE = [
+    "nplusone.ext.django.NPlusOneMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -132,3 +135,21 @@ MEDIA_ROOT = BASE_DIR / "volumes/data/cdn"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+NPLUSONE_LOGGER = logging.getLogger("nplusone")
+NPLUSONE_LOG_LEVEL = logging.WARN
+
+LOGGING = {
+    "version": 1,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "nplusone": {
+            "handlers": ["console"],
+            "level": "WARN",
+        },
+    },
+}

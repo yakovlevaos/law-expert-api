@@ -22,14 +22,28 @@ from genesis.apps.games.serializers import (
 
 
 class StandardResultsSetPagination(PageNumberPagination):
-    page_size = 20
+    page_size = 30
     page_size_query_param = "page_size"
-    max_page_size = 500
+    max_page_size = 200
 
 
 class GameViewSet(ModelViewSet):
     serializer_class = GameSerializer
-    queryset = Game.objects.all()
+    queryset = (
+        Game.objects.select_related(
+            "author",
+            "duration_type",
+        )
+        .all()
+        .prefetch_related(
+            "genres",
+            "screen_shots",
+            "modes",
+            "platforms",
+            "competencies",
+        )
+        .order_by("id")
+    )
     http_method_names = ["get", "head"]
     pagination_class = StandardResultsSetPagination
 
