@@ -3263,6 +3263,11 @@ raw_games = [
 
 
 if __name__ == "__main__":
+    if True:
+        # do not use this scrip any more
+        # just for history
+        exit()
+
     import os
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
@@ -3270,6 +3275,7 @@ if __name__ == "__main__":
     import django
 
     django.setup()
+
     from apps.games.models import (
         Genre,
         Duration,
