@@ -1,46 +1,38 @@
 from django.db import models
 
 
-class Author(models.Model):
+class NameBase(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return self.name
 
-
-class Genre(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.name
+    class Meta:
+        abstract = True
 
 
-class Mode(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.name
+class Author(NameBase):
+    pass
 
 
-class Competencies(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.name
+class Genre(NameBase):
+    pass
 
 
-class Duration(models.Model):
-    name = models.CharField(max_length=255, unique=True)
-
-    def __str__(self):
-        return self.name
+class Mode(NameBase):
+    pass
 
 
-class Platform(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+class Competencies(NameBase):
+    pass
 
-    def __str__(self):
-        return self.name
+
+class Duration(NameBase):
+    pass
+
+
+class Platform(NameBase):
+    pass
 
 
 class Game(models.Model):

@@ -1,6 +1,15 @@
 from rest_framework import serializers
 
-from apps.games.models import Author, Game, ScreenShot, Duration, Platform, Mode
+from apps.games.models import (
+    Author,
+    Game,
+    ScreenShot,
+    Duration,
+    Platform,
+    Mode,
+    Genre,
+    Competencies,
+)
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -41,7 +50,7 @@ class PlatformSerializer(serializers.ModelSerializer):
 
 class GenresSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Duration
+        model = Genre
         fields = [
             "id",
             "name",
@@ -50,7 +59,7 @@ class GenresSerializer(serializers.ModelSerializer):
 
 class CompetenciesSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Duration
+        model = Competencies
         fields = [
             "id",
             "name",
