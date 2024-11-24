@@ -1,3 +1,5 @@
+from django.db.models import Case, When, TextField
+from django.db.models.functions import Substr
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.viewsets import ModelViewSet
 
@@ -28,13 +30,22 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 class GameViewSet(ModelViewSet):
-    serializer_class = GameSerializer
+    START_FOR_SUBSTR = "Серия игр "
     queryset = (
         Game.objects.select_related(
             "author",
             "duration_type",
         )
-        .all()
+        .annotate(
+            sort_field=Case(
+                When(
+                    title__startswith=START_FOR_SUBSTR,
+                    then=Substr("title", 11),
+                ),
+                output_field=TextField(),
+                default="title",
+            ),
+        )
         .prefetch_related(
             "genres",
             "screen_shots",
@@ -42,8 +53,11 @@ class GameViewSet(ModelViewSet):
             "platforms",
             "competencies",
         )
-        .order_by("id")
+        .all()
+        .order_by("sort_field")
     )
+    serializer_class = GameSerializer
+
     http_method_names = ["get", "head"]
     pagination_class = StandardResultsSetPagination
 
