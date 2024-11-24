@@ -66,7 +66,7 @@ class PlatformViewSet(ModelViewSet):
     http_method_names = ["get", "head"]
 
 
-class CompetitionViewSet(ModelViewSet):
+class CompetenceViewSet(ModelViewSet):
     serializer_class = CompetenciesSerializer
     queryset = Competencies.objects.all()
     http_method_names = ["get", "head"]

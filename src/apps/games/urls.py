@@ -5,7 +5,7 @@ from apps.games.views import (
     GameViewSet,
     DurationViewSet,
     ModeViewSet,
-    CompetitionViewSet,
+    CompetenceViewSet,
     GenreViewSet,
     PlatformViewSet,
     AuthorViewSet,
@@ -14,7 +14,7 @@ from apps.games.views import (
 router = SimpleRouter()
 router.register("games", GameViewSet)
 router.register("durations", DurationViewSet)
-router.register("competencies", CompetitionViewSet)
+router.register("competencies", CompetenceViewSet)
 router.register("genres", GenreViewSet)
 router.register("modes", ModeViewSet)
 router.register("platforms", PlatformViewSet)
