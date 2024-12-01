@@ -20,15 +20,12 @@ DEBUG = env("DEBUG")
 
 ALLOWED_HOSTS = ["*"]
 
-
 # Application definition
-
 INSTALLED_APPS = [
-    "nplusone.ext.django",
     "corsheaders",
     "apps.games.apps.GamesConfig",
     "rest_framework",
-    "drf_spectacular",
+    "drf_spectacular",  # swagger
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -37,22 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 ]
 
-REST_FRAMEWORK = {
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-}
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Genesis API",
-    "DESCRIPTION": "Genesis API got law experts",
-    "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-    "SWAGGER_UI_SETTINGS": {
-        "filter": True,
-    },
-}
-
 MIDDLEWARE = [
-    "nplusone.ext.django.NPlusOneMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -62,6 +44,40 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# For debug tools only
+if DEBUG:
+    INSTALLED_APPS = [
+        "debug_toolbar",
+        "nplusone.ext.django",
+    ] + INSTALLED_APPS
+
+    MIDDLEWARE += [
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+        "nplusone.ext.django.NPlusOneMiddleware",
+    ]
+
+    REST_FRAMEWORK = {
+        "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    }
+
+    SPECTACULAR_SETTINGS = {
+        "TITLE": "Genesis API",
+        "DESCRIPTION": "Genesis API got law experts",
+        "VERSION": "1.0.0",
+        "SERVE_INCLUDE_SCHEMA": False,
+        "SWAGGER_UI_SETTINGS": {
+            "filter": True,
+        },
+    }
+
+    INTERNAL_IPS = [
+        "127.0.0.1",
+    ]
+
+    NPLUSONE_LOGGER = logging.getLogger("nplusone")
+    NPLUSONE_LOG_LEVEL = logging.WARN
+
 
 ROOT_URLCONF = "config.urls"
 
@@ -131,13 +147,9 @@ MEDIA_ROOT = BASE_DIR / "../volumes/data/cdn"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ORIGIN_ALLOW_ALL = True
-
-NPLUSONE_LOGGER = logging.getLogger("nplusone")
-NPLUSONE_LOG_LEVEL = logging.WARN
 
 LOGGING = {
     "version": 1,
