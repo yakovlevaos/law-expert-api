@@ -24,7 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: "bash -c 'python manage.py migrate && echo yes | python manage.py collectstatic && uwsgi --processes=5 --harakiri=20 --max-requests=5000 --master --http :8099 --module config.wsgi'"
+    command: "bash -c 'python manage.py migrate && echo yes | python manage.py collectstatic && uwsgi --processes=3 --harakiri=20 --max-requests=5000 --master --http :8099 --module config.wsgi'"
     ports:
       - "8099:8099"
     depends_on:
