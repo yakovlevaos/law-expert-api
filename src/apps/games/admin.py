@@ -5,13 +5,13 @@ from django.utils.html import format_html
 
 from apps.games.models import (
     Author,
-    Genre,
-    Platform,
-    Game,
-    Duration,
-    ScreenShot,
     Competencies,
+    Duration,
+    Game,
+    Genre,
     Mode,
+    Platform,
+    ScreenShot,
 )
 
 
