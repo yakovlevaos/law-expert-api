@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: genesis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      SECRET_KEY: ci-secret-key-not-used-anywhere-else
+      DEBUG: "false"
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
+      DATABASE_URL: psql://postgres:postgres@localhost:5432/genesis
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.7.5"
+          enable-cache: true
+
+      - name: Install dependencies
+        # --locked fails if uv.lock is out of date with pyproject.toml.
+        run: uv sync --locked
+
+      - name: Format
+        run: uv run ruff format --check .
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Types
+        run: uv run ty check
+
+      - name: Check for missing migrations
+        run: uv run python src/manage.py makemigrations --check --dry-run
+
+      - name: Django deployment checklist
+        run: uv run python src/manage.py check --deploy --fail-level ERROR
+
+      - name: Tests
+        run: uv run python src/manage.py test apps
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production image
+        run: docker build -t genesis:ci .
