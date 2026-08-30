@@ -2,10 +2,12 @@ from django.contrib import admin
 from django.contrib.admin.widgets import AdminFileWidget
 from django.db import models
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from apps.games.models import (
+    AlternativeTitle,
     Author,
-    Competencies,
+    Competency,
     Duration,
     Game,
     Genre,
@@ -15,73 +17,92 @@ from apps.games.models import (
 )
 
 
+def image_preview(image, size: int) -> str:
+    """Clickable thumbnail for an image field, or a dash when it is empty."""
+    if not image:
+        return "—"
+    return format_html(
+        '<a href="{}" target="_blank">'
+        '<img src="{}" alt="{}" width="{}" height="{}" style="object-fit: cover;" />'
+        "</a>",
+        image.url,
+        image.url,
+        image.name,
+        size,
+        size,
+    )
+
+
 class CustomAdminFileWidget(AdminFileWidget):
     def render(self, name, value, attrs=None, renderer=None):
-        result = []
-        if hasattr(value, "url"):
-            result.append(
-                f"""<a href="{value.url}" target="_blank">
-                      <img 
-                        src="{value.url}" alt="{value}" 
-                        width="100" height="100"
-                        style="object-fit: cover;"
-                      />
-                    </a>"""
-            )
-        result.append(super().render(name, value, attrs, renderer))
-        return format_html("".join(result))
+        preview = image_preview(value, 100) if hasattr(value, "url") else ""
+        return mark_safe(preview) + super().render(name, value, attrs, renderer)
+
+
+class NameAdmin(admin.ModelAdmin):
+    list_display = ["name"]
+    search_fields = ["name"]
+    ordering = ["name"]
 
 
 @admin.register(Author)
-class GameAuthorAdmin(admin.ModelAdmin):
-    list_display = ["name"]
-    readonly_fields = ["id"]
+class AuthorAdmin(NameAdmin):
+    pass
 
 
-class ShowPhotoInline(admin.TabularInline):
+@admin.register(Genre)
+class GenreAdmin(NameAdmin):
+    pass
+
+
+@admin.register(Platform)
+class PlatformAdmin(NameAdmin):
+    pass
+
+
+@admin.register(Duration)
+class DurationAdmin(NameAdmin):
+    pass
+
+
+@admin.register(Competency)
+class CompetencyAdmin(NameAdmin):
+    pass
+
+
+@admin.register(Mode)
+class ModeAdmin(NameAdmin):
+    pass
+
+
+class AlternativeTitleInline(admin.TabularInline):
+    model = AlternativeTitle
+    extra = 1
+
+
+class ScreenShotInline(admin.TabularInline):
     model = ScreenShot
+    extra = 1
     formfield_overrides = {models.ImageField: {"widget": CustomAdminFileWidget}}
 
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    inlines = [ShowPhotoInline]
+    inlines = [AlternativeTitleInline, ScreenShotInline]
     formfield_overrides = {models.ImageField: {"widget": CustomAdminFileWidget}}
 
-    list_display = ("title", "image_cover")
+    list_display = ("title", "image_cover", "duration_display", "duration_type")
+    list_select_related = ("author", "duration_type")
+    list_filter = ("duration_type", "platforms", "modes", "genres")
+    search_fields = ("title", "description", "alternative_titles__name")
+    autocomplete_fields = ("author", "duration_type")
+    filter_horizontal = ("genres", "competencies", "platforms", "modes")
+    readonly_fields = ("created_at", "modified_at")
 
+    @admin.display(description="Обложка")
     def image_cover(self, obj):
-        return format_html(
-            f"""<a href="{obj.cover_image.url}" target="_blank">
-                      <img 
-                        src="{obj.cover_image.url}" alt="{obj.cover_image}" 
-                        width="50" height="50"
-                        style="object-fit: cover;"
-                      />
-                    </a>"""
-        )
+        return image_preview(obj.cover_image, 50)
 
-
-@admin.register(Genre)
-class GenreAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Platform)
-class PlatformAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Duration)
-class DurationAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Competencies)
-class CompetenceAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(Mode)
-class ModeAdmin(admin.ModelAdmin):
-    pass
+    @admin.display(description="Длительность")
+    def duration_display(self, obj):
+        return obj.duration
