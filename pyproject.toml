@@ -38,6 +38,10 @@ dev = [
 # with src/ on the path -- same as manage.py sets up at runtime.
 root = ["./src"]
 python-version = "3.12"
+# Point ty at the uv-managed venv explicitly. `uv run ty` sets VIRTUAL_ENV so it
+# auto-discovers .venv, but the IDE extension runs ty without that activation and
+# would otherwise fall back to a system interpreter with no third-party packages.
+python = ".venv"
 
 [tool.ty.src]
 exclude = ["volumes", "**/migrations"]

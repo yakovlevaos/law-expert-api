@@ -183,5 +183,7 @@ volumes/
 .DS_Store
 staticfiles/
 
+backup/
+
 # End of https://www.toptal.com/developers/gitignore/api/python
 
