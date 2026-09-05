@@ -19,8 +19,9 @@ WORKDIR /build
 COPY pyproject.toml uv.lock ./
 
 # --locked fails the build if uv.lock is stale; --no-default-groups keeps the
-# dev group (debug-toolbar, nplusone, ruff, ty) out of the image.
-RUN uv sync --locked --no-default-groups --no-install-project
+# dev group (debug-toolbar, nplusone, ruff, ty) out of the image, and
+# --group prod adds uWSGI, which only the image needs.
+RUN uv sync --locked --no-default-groups --group prod --no-install-project
 
 # --- runtime stage -------------------------------------------------------
 FROM python:3.12-slim

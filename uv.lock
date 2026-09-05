@@ -153,7 +153,6 @@ dependencies = [
     { name = "drf-spectacular" },
     { name = "pillow" },
     { name = "psycopg2-binary" },
-    { name = "uwsgi" },
 ]
 
 [package.dev-dependencies]
@@ -164,6 +163,9 @@ dev = [
     { name = "nplusone" },
     { name = "ruff" },
     { name = "ty" },
+]
+prod = [
+    { name = "uwsgi" },
 ]
 
 [package.metadata]
@@ -176,7 +178,6 @@ requires-dist = [
     { name = "drf-spectacular", specifier = ">=0.27.2,<0.28" },
     { name = "pillow", specifier = ">=11,<12" },
     { name = "psycopg2-binary", specifier = ">=2.9.10,<3" },
-    { name = "uwsgi", specifier = ">=2.0.28,<3" },
 ]
 
 [package.metadata.requires-dev]
@@ -188,6 +189,7 @@ dev = [
     { name = "ruff", specifier = ">=0.8.1" },
     { name = "ty", specifier = ">=0.0.75,<0.1" },
 ]
+prod = [{ name = "uwsgi", specifier = ">=2.0.28,<3" }]
 
 [[package]]
 name = "inflection"

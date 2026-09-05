@@ -119,9 +119,11 @@ installed in the production image.
 make up
 ```
 
-The image builds with `uv sync --locked --no-default-groups`, so the dev group
-(debug-toolbar, nplusone, ruff, ty) never reaches production and a stale
-`uv.lock` fails the build. It copies `src/` in, runs as a non-root user, and
+The image builds with `uv sync --locked --no-default-groups --group prod`, so
+the dev group (debug-toolbar, nplusone, ruff, ty) never reaches production and
+a stale `uv.lock` fails the build. uWSGI sits in its own `prod` group because
+it has no wheels and compiling it on CI is slow and fragile -- only the image
+installs it. It copies `src/` in, runs as a non-root user, and
 starts uWSGI via `deploy/entrypoint.sh`, which applies migrations and collects
 static files. uWSGI serves `/static/` and `/cdn/` from `/volumes/data` (see
 `deploy/uwsgi.ini`). The API listens on port 8099.
