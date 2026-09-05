@@ -128,19 +128,71 @@ starts uWSGI via `deploy/entrypoint.sh`, which applies migrations and collects
 static files. uWSGI serves `/static/` and `/cdn/` from `/volumes/data` (see
 `deploy/uwsgi.ini`). The API listens on port 8099.
 
+### uWSGI workers
+
+`deploy/uwsgi.ini` runs **3 worker processes** plus a master that supervises
+them and serves nothing itself. There are no threads, so a worker handles one
+request at a time and the server answers 3 concurrent requests.
+
+| Setting | Value | Meaning |
+| ------- | ----- | ------- |
+| `processes` | 3 | Worker processes |
+| `harakiri` | 20 | A request running longer than 20s kills its worker |
+| `max-requests` | 5000 | A worker respawns after 5000 requests, capping leaks |
+
+Measured on the seeded catalog: the whole catalog (`?page_size=200`) takes
+~118 ms and a default page of 30 games ~41 ms, which puts the ceiling at
+roughly 25 and 70 requests per second respectively.
+
+Raise `processes` only when the CPU is genuinely the bottleneck --
+`2 x $(nproc) + 1` is the usual starting point. Note that ~90% of that 118 ms
+is Python re-serialising the same rows, so caching the response buys far more
+than extra workers.
+
 ## Continuous deployment
 
-A push to `main` deploys automatically: CI runs lint, types, migrations check
-and tests, builds the image, and only then does the `deploy` job SSH into the
-server and run `deploy/deploy.sh`. Pull requests never reach the server.
+A push to `main` deploys automatically. Pull requests run the checks but never
+reach the server.
 
-`deploy/deploy.sh` fast-forwards the checkout to `origin/main`, rebuilds the
-stack, and waits for `/health/`. If the new revision does not become healthy
-within `HEALTH_TIMEOUT` (120s), it resets the checkout back to the previous
-commit, rebuilds, and exits non-zero, so a broken release does not stay up.
+What a push to `main` triggers, in order:
+
+1. **`test`** -- `ruff format --check`, `ruff check`, `ty check`, a
+   missing-migration check, Django's deployment checklist, and the test suite
+   against PostgreSQL 17.
+2. **`docker`** -- builds the production image, so a broken Dockerfile is
+   caught before the server is touched.
+3. **`deploy`** -- runs only if both succeeded. It writes `DEPLOY_SSH_KEY` to
+   the runner, SSHes in as `DEPLOY_USER@DEPLOY_HOST`, and runs
+   `deploy/deploy.sh` in `DEPLOY_PATH`.
+
+The job belongs to the `production` environment (add a required reviewer there
+to gate deploys) and to a non-cancelling concurrency group, so two pushes queue
+instead of racing and an older commit cannot overtake a newer one.
+
+On the server, `deploy/deploy.sh`:
+
+1. refuses to run if `.env` is missing -- the container would not start;
+2. `git fetch --prune origin main`, then `git checkout -B main origin/main`
+   (a plain `reset --hard` would move whichever branch is checked out and
+   leave the server on a stale branch name);
+3. `docker compose --profile prod up -d --build`, which runs
+   `deploy/entrypoint.sh`: migrations, `collectstatic`, then uWSGI;
+4. polls `/health/` for up to `HEALTH_TIMEOUT` (120s);
+5. on failure, dumps the container logs, resets to the previous commit,
+   rebuilds, and exits non-zero.
+
+If the target commit is already checked out it only makes sure the stack is
+up, so re-running a deploy is harmless.
 
 **Rollback covers code only.** Migrations applied by the entrypoint are not
-reverted; a release that changes the schema needs its own rollback plan.
+reverted; a release that changes the schema needs its own rollback plan --
+take a database dump first, and be ready to restore it.
+
+Watch a deploy, or re-run one after fixing a secret, with:
+
+```bash
+gh run watch <run-id> --repo <owner>/<repo>
+```
 
 ### Repository secrets
 
@@ -153,17 +205,25 @@ reverted; a release that changes the schema needs its own rollback plan.
 | `DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan <host>` |
 | `DEPLOY_PORT` | Optional, defaults to 22 |
 
-Two different keys are involved, which is easy to mix up:
-
-- the **runner key** (`DEPLOY_SSH_KEY`) — its public half goes into
-  `~/.ssh/authorized_keys` of `DEPLOY_USER` on the server;
-- a **deploy key on GitHub** — the server runs `git fetch origin` over SSH, so
-  it needs its own read-only key registered in the repository's Deploy keys.
+`DEPLOY_SSH_KEY` is the **private** half of a dedicated key pair; its public
+half goes into `~/.ssh/authorized_keys` of `DEPLOY_USER` on the server. Give it
+no passphrase -- the runner connects with `BatchMode=yes` and cannot answer a
+prompt.
 
 ```bash
-ssh-keygen -t ed25519 -C "github-actions" -f deploy_runner   # -> DEPLOY_SSH_KEY
-ssh-keyscan example.com                                      # -> DEPLOY_KNOWN_HOSTS
+ssh-keygen -t ed25519 -C "github-actions" -f deploy_runner -N ''
+gh secret set DEPLOY_SSH_KEY < deploy_runner    # never paste it by hand
+ssh-copy-id -i deploy_runner.pub user@example.com
+ssh-keyscan -H example.com | gh secret set DEPLOY_KNOWN_HOSTS
 ```
+
+Set the secret from the file rather than the clipboard: a key whose line breaks
+were lost fails on the runner with `Load key: error in libcrypto`, before it
+ever reaches the server.
+
+While the repository is public the server fetches over HTTPS and needs no
+credentials of its own. If it ever becomes private, give the server its own
+read-only key and register it under the repository's Deploy keys.
 
 ### Server prerequisites
 
@@ -176,19 +236,19 @@ Compose plugin must be installed.
 Set the `production` environment in the repository settings to require a
 reviewer if the first deploys should be approved by hand.
 
-### Before enabling it
+### Releases that change the schema
 
-The current `main` predates this branch. Once it is merged, the code requires
-PostgreSQL 17 (Django 5.2 refuses to start on 13), and the entrypoint applies
-migrations `0002`-`0007`, which rename a table, split titles into their own
-model and drop the free-text duration column. Order matters:
+The entrypoint migrates on every start, so a schema change ships with the
+deploy and the automatic rollback cannot undo it. Before merging one:
 
-1. dump the production database;
-2. upgrade the server to `postgres:17-alpine` and restore the dump;
-3. merge to `main`;
-4. only then let the deploy job run.
+1. dump the database (`make dump`), and verify the dump is complete --
+   `tail -5` must contain `PostgreSQL database dump complete`;
+2. rehearse the migration on a scratch copy of that dump;
+3. merge, and keep the dump until the release has settled.
 
-Deploying in a different order leaves the container crash-looping on startup.
+The same applies to a PostgreSQL major upgrade: dump, move the old data
+directory aside rather than deleting it, start the new version, restore, and
+only then let the application start.
 
 ## Type checking
 
