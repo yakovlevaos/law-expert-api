@@ -187,3 +187,6 @@ backup/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 
+
+# Local-only compose overrides (must never reach the server)
+docker-compose.override.yaml

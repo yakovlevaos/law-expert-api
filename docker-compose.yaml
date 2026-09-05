@@ -16,9 +16,6 @@ services:
       # Alpine/musl keeps the byte-order collation the catalog was sorted with;
       # switching to a glibc image would silently reorder the games list.
       - LANG=en_US.utf8
-    ports:
-      # Bound to loopback: the database must not be reachable from the network.
-      - "127.0.0.1:5432:5432"
     volumes:
       - ./deploy/postgres_db:/docker-entrypoint-initdb.d
       - ./volumes/postgres_db:/var/lib/postgresql/data/
