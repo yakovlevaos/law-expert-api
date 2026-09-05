@@ -1,5 +1,11 @@
 ---
 
+# Pinned so the project name does not depend on the checkout directory name.
+# container_name is fixed for both services, so a project name that differs
+# from the one that created the running containers makes `compose up` fail
+# with "container name is already in use" instead of adopting them.
+name: law-expert-api
+
 services:
   postgres_db:
     container_name: "genesis-postgres"
