@@ -126,6 +126,68 @@ starts uWSGI via `deploy/entrypoint.sh`, which applies migrations and collects
 static files. uWSGI serves `/static/` and `/cdn/` from `/volumes/data` (see
 `deploy/uwsgi.ini`). The API listens on port 8099.
 
+## Continuous deployment
+
+A push to `main` deploys automatically: CI runs lint, types, migrations check
+and tests, builds the image, and only then does the `deploy` job SSH into the
+server and run `deploy/deploy.sh`. Pull requests never reach the server.
+
+`deploy/deploy.sh` fast-forwards the checkout to `origin/main`, rebuilds the
+stack, and waits for `/health/`. If the new revision does not become healthy
+within `HEALTH_TIMEOUT` (120s), it resets the checkout back to the previous
+commit, rebuilds, and exits non-zero, so a broken release does not stay up.
+
+**Rollback covers code only.** Migrations applied by the entrypoint are not
+reverted; a release that changes the schema needs its own rollback plan.
+
+### Repository secrets
+
+| Secret | Value |
+| ------ | ----- |
+| `DEPLOY_HOST` | Server hostname or IP |
+| `DEPLOY_USER` | SSH user, must be in the `docker` group |
+| `DEPLOY_PATH` | Absolute path of the checkout on the server |
+| `DEPLOY_SSH_KEY` | Private key the runner authenticates with |
+| `DEPLOY_KNOWN_HOSTS` | Output of `ssh-keyscan <host>` |
+| `DEPLOY_PORT` | Optional, defaults to 22 |
+
+Two different keys are involved, which is easy to mix up:
+
+- the **runner key** (`DEPLOY_SSH_KEY`) — its public half goes into
+  `~/.ssh/authorized_keys` of `DEPLOY_USER` on the server;
+- a **deploy key on GitHub** — the server runs `git fetch origin` over SSH, so
+  it needs its own read-only key registered in the repository's Deploy keys.
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions" -f deploy_runner   # -> DEPLOY_SSH_KEY
+ssh-keyscan example.com                                      # -> DEPLOY_KNOWN_HOSTS
+```
+
+### Server prerequisites
+
+The checkout at `DEPLOY_PATH` must already exist, sit on `main`, and contain a
+`.env` (the script refuses to deploy without one, since the container would
+not start). `.env` and `volumes/` are gitignored, so neither the reset nor the
+rebuild touches secrets, the database or uploaded media. Docker with the
+Compose plugin must be installed.
+
+Set the `production` environment in the repository settings to require a
+reviewer if the first deploys should be approved by hand.
+
+### Before enabling it
+
+The current `main` predates this branch. Once it is merged, the code requires
+PostgreSQL 17 (Django 5.2 refuses to start on 13), and the entrypoint applies
+migrations `0002`-`0007`, which rename a table, split titles into their own
+model and drop the free-text duration column. Order matters:
+
+1. dump the production database;
+2. upgrade the server to `postgres:17-alpine` and restore the dump;
+3. merge to `main`;
+4. only then let the deploy job run.
+
+Deploying in a different order leaves the container crash-looping on startup.
+
 ## Type checking
 
 `make types` runs ty over `src/`. Django's ORM is heavily dynamic, so the dev
