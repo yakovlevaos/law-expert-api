@@ -1,19 +1,32 @@
 ---
 
+# Pinned so the project name does not depend on the checkout directory name.
+# container_name is fixed for both services, so a project name that differs
+# from the one that created the running containers makes `compose up` fail
+# with "container name is already in use" instead of adopting them.
+name: law-expert-api
+
 services:
   postgres_db:
     container_name: "genesis-postgres"
-    image: postgres:13-alpine
+    image: postgres:17-alpine
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
+      # Alpine/musl keeps the byte-order collation the catalog was sorted with;
+      # switching to a glibc image would silently reorder the games list.
+      - LANG=en_US.utf8
     volumes:
       - ./deploy/postgres_db:/docker-entrypoint-initdb.d
       - ./volumes/postgres_db:/var/lib/postgresql/data/
     networks:
       - genesis-backend-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d genesis"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     restart: unless-stopped
     profiles:
       - prod
@@ -24,20 +37,31 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: "bash -c 'python manage.py migrate && echo yes | python manage.py collectstatic && uwsgi --processes=3 --harakiri=20 --max-requests=5000 --master --http :8099 --module config.wsgi'"
     ports:
       - "8099:8099"
     depends_on:
-      - postgres_db
+      postgres_db:
+        # Without this the entrypoint's `migrate` races the database startup.
+        condition: service_healthy
     env_file:
       - .env
+    environment:
+      # Overrides values from .env so that a single .env serves both local
+      # development and the Docker stack.
+      #   - inside the compose network the database is `postgres_db`, not
+      #     localhost;
+      #   - the `prod` profile must never run with DEBUG on: the image ships
+      #     no debug tooling.
+      DATABASE_URL: "psql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres_db:5432/genesis"
+      DEBUG: "false"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-localhost,127.0.0.1}"
     volumes:
-      - ./src:/server
+      # Only the data volume is mounted; the application code lives in the
+      # image so the container is reproducible.
       - ./volumes/data:/volumes/data
     networks:
       genesis-backend-net:
-        ipv4_address: 177.129.0.57
-
+        ipv4_address: 172.28.0.57
     restart: unless-stopped
     profiles:
       - prod
@@ -47,4 +71,6 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 177.129.0.0/24
+        # RFC 1918 private range. The previous 177.129.0.0/24 is publicly
+        # routable address space and shadowed real hosts.
+        - subnet: 172.28.0.0/24

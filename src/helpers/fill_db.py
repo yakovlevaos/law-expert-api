@@ -222,7 +222,7 @@ raw_games = [
         "index": 9,
         "videoGame": [
             "Crash Bandicoot N. Sane Trilogy",
-            "Crash Bandicoot 4: It’s About duration",
+            "Crash Bandicoot 4: It’s About Time",
         ],
         "platform": ["PS4", "PS5", "ПК", "Xbox", "Nintendo Switch"],
         "duration": ["2-6 часов", "средняя"],
@@ -3276,13 +3276,15 @@ if __name__ == "__main__":
 
     django.setup()
 
+    from apps.games.durations import parse_duration
     from apps.games.models import (
-        Genre,
+        AlternativeTitle,
+        Competency,
         Duration,
+        Game,
+        Genre,
         Mode,
         Platform,
-        Competencies,
-        Game,
         ScreenShot,
     )
 
@@ -3294,10 +3296,8 @@ if __name__ == "__main__":
     durations = []
 
     for raw_game in raw_games:
-        if isinstance(raw_game["videoGame"], str):
-            title = raw_game["videoGame"]
-        else:
-            title = "\n".join(raw_game["videoGame"])
+        raw_titles = raw_game["videoGame"]
+        titles = [raw_titles] if isinstance(raw_titles, str) else list(raw_titles)
 
         if isinstance(raw_game["genre"], str):
             if raw_game["genre"] not in genres:
@@ -3337,23 +3337,17 @@ if __name__ == "__main__":
             for item in raw_game["type"]:
                 if item not in modes:
                     modes.append(item)
-    create = True
-    if create:
-        for raw_item in genres:
-            item = Genre(name=raw_item)
-            item.save()
-        for raw_item in platforms:
-            item = Platform(name=raw_item)
-            item.save()
-        for raw_item in competencies:
-            item = Competencies(name=raw_item)
-            item.save()
-        for raw_item in durations:
-            item = Duration(name=raw_item)
-            item.save()
-        for raw_item in modes:
-            item = Mode(name=raw_item)
-            item.save()
+    # get_or_create keeps the script re-runnable: names are unique, so a second
+    # run would otherwise fail with IntegrityError.
+    for model, raw_items in (
+        (Genre, genres),
+        (Platform, platforms),
+        (Competency, competencies),
+        (Duration, durations),
+        (Mode, modes),
+    ):
+        for raw_item in raw_items:
+            model.objects.get_or_create(name=raw_item)
 
     # create games and many to mant
     for raw_game in raw_games:
@@ -3362,10 +3356,8 @@ if __name__ == "__main__":
         platforms = []
         modes = []
         durations = []
-        if isinstance(raw_game["videoGame"], str):
-            title = raw_game["videoGame"]
-        else:
-            title = "\n".join(raw_game["videoGame"])
+        raw_titles = raw_game["videoGame"]
+        titles = [raw_titles] if isinstance(raw_titles, str) else list(raw_titles)
 
         if isinstance(raw_game["genre"], str):
             if raw_game["genre"] not in genres:
@@ -3378,12 +3370,12 @@ if __name__ == "__main__":
         if isinstance(raw_game["competencies"], str):
             if raw_game["competencies"] not in competencies:
                 competencies.append(
-                    Competencies.objects.get(name=raw_game["competencies"])
+                    Competency.objects.get(name=raw_game["competencies"])
                 )
         else:
             for item in raw_game["competencies"]:
                 if item not in competencies:
-                    competencies.append(Competencies.objects.get(name=item))
+                    competencies.append(Competency.objects.get(name=item))
 
         if isinstance(raw_game["duration"], str):
             if raw_game["duration"] not in durations:
@@ -3410,15 +3402,24 @@ if __name__ == "__main__":
                 if item not in modes:
                     modes.append(Mode.objects.get(name=item))
 
-        print(modes, platforms, duration, competencies, genres)
+        raw_duration = raw_game["duration"]
+        duration_text = (
+            raw_duration if isinstance(raw_duration, str) else raw_duration[0]
+        )
+
         game = Game()
-        game.title = title
+        game.title = titles[0]
         game.description = raw_game["detailedDescription"]
         picture = raw_game["picture"] + ".jpg"
         game.cover_image.name = f"games/{picture}"
         game.duration_type = duration
-        game.duration = raw_game["duration"][0]
+        game.duration_hours_min, game.duration_hours_max = parse_duration(duration_text)
         game.save()
+
+        AlternativeTitle.objects.bulk_create(
+            AlternativeTitle(game=game, name=name, position=position)
+            for position, name in enumerate(titles[1:], start=1)
+        )
 
         game.genres.add(*genres)
         game.competencies.add(*competencies)

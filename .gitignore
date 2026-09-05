@@ -171,6 +171,9 @@ poetry.toml
 # ruff
 .ruff_cache/
 
+# ty
+.ty_cache/
+
 # LSP config files
 pyrightconfig.json
 
@@ -180,5 +183,10 @@ volumes/
 .DS_Store
 staticfiles/
 
+backup/
+
 # End of https://www.toptal.com/developers/gitignore/api/python
 
+
+# Local-only compose overrides (must never reach the server)
+docker-compose.override.yaml
