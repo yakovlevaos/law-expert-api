@@ -38,12 +38,10 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      # Loopback only. Public traffic reaches the API through the host nginx
-      # (TLS for genesis-expert.ru), which proxies to the container address on
-      # the compose network, not to this port. Publishing on 0.0.0.0 let anyone
-      # bypass nginx and TLS. The port stays on 127.0.0.1 because
-      # deploy/deploy.sh health-checks http://127.0.0.1:8099/health/ -- removing
-      # it entirely would make every automated deploy roll back.
+      # Loopback only. The host nginx terminates TLS for genesis-expert.ru and
+      # proxies /api and /admin to 127.0.0.1:8099, and deploy/deploy.sh
+      # health-checks the same address. Publishing on 0.0.0.0 would let anyone
+      # bypass nginx and TLS.
       - "127.0.0.1:8099:8099"
     depends_on:
       postgres_db:
@@ -66,17 +64,16 @@ services:
       # image so the container is reproducible.
       - ./volumes/data:/volumes/data
     networks:
-      genesis-backend-net:
-        ipv4_address: 172.28.0.57
+      - genesis-backend-net
     restart: unless-stopped
     profiles:
       - prod
 
 networks:
+  # No fixed subnet and no static addresses: nothing reaches the containers by
+  # IP -- nginx uses the loopback-published port, and the services find each
+  # other by name. Letting Docker choose also rules out the "Pool overlaps" and
+  # "Invalid address ... does not belong to any of this network's subnets"
+  # failures that hand-picked subnets run into.
   genesis-backend-net:
     driver: bridge
-    ipam:
-      config:
-        # RFC 1918 private range. The previous 177.129.0.0/24 is publicly
-        # routable address space and shadowed real hosts.
-        - subnet: 172.28.0.0/24
