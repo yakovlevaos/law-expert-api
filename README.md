@@ -146,6 +146,12 @@ request at a time and the server answers 3 concurrent requests.
 | `harakiri` | 20 | A request running longer than 20s kills its worker |
 | `max-requests` | 5000 | A worker respawns after 5000 requests, capping leaks |
 
+Docker's `HEALTHCHECK` calls `/health/` every 30 seconds from inside the
+container. Successful checks are kept out of the request log; any other
+status -- a 503 when the database is unreachable, say -- is still logged.
+This relies on uWSGI's internal routing, which is only compiled in when the
+builder stage has `libpcre2-dev`.
+
 Measured on the seeded catalog: the whole catalog (`?page_size=200`) takes
 ~118 ms and a default page of 30 games ~41 ms, which puts the ceiling at
 roughly 25 and 70 requests per second respectively.

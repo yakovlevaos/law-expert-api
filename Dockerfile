@@ -11,8 +11,11 @@ ENV UV_COMPILE_BYTECODE=1 \
     # shebangs stay valid after the copy into the runtime stage.
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
+# libpcre2-dev: uWSGI only compiles its internal routing (used by uwsgi.ini to
+# keep successful health checks out of the log) when PCRE is present. The
+# runtime image already ships libpcre2-8.
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y build-essential && \
+    apt-get install --no-install-recommends -y build-essential libpcre2-dev && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
