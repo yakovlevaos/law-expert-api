@@ -38,7 +38,13 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8099:8099"
+      # Loopback only. Public traffic reaches the API through the host nginx
+      # (TLS for genesis-expert.ru), which proxies to the container address on
+      # the compose network, not to this port. Publishing on 0.0.0.0 let anyone
+      # bypass nginx and TLS. The port stays on 127.0.0.1 because
+      # deploy/deploy.sh health-checks http://127.0.0.1:8099/health/ -- removing
+      # it entirely would make every automated deploy roll back.
+      - "127.0.0.1:8099:8099"
     depends_on:
       postgres_db:
         # Without this the entrypoint's `migrate` races the database startup.
