@@ -128,6 +128,13 @@ starts uWSGI via `deploy/entrypoint.sh`, which applies migrations and collects
 static files. uWSGI serves `/static/` and `/cdn/` from `/volumes/data` (see
 `deploy/uwsgi.ini`). The API listens on port 8099.
 
+On the server the port is published on `127.0.0.1` only. Public traffic goes
+through the host nginx, which terminates TLS for `genesis-expert.ru` and
+proxies `/api` and `/admin` to the container's address on the compose network,
+`172.28.0.57:8099` -- so keep that static address in `docker-compose.yaml`,
+or the site's API routes start returning 502. The loopback publish remains
+only because `deploy/deploy.sh` health-checks `http://127.0.0.1:8099/health/`.
+
 ### uWSGI workers
 
 `deploy/uwsgi.ini` runs **3 worker processes** plus a master that supervises
