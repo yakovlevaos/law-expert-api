@@ -179,3 +179,4 @@ The `src/helpers/fill_db.py` script contains raw game data in Russian for seedin
 - CORS origins come from `CORS_ALLOWED_ORIGINS`; every origin is allowed only when `DEBUG` is on and that list is empty
 - `SECRET_KEY` and `ALLOWED_HOSTS` are required when `DEBUG=false`; the app refuses to start without them
 - `debug_toolbar` and `nplusone` are dev-only dependencies - never import them at module level
+- uWSGI routing (`final-route*` in `deploy/uwsgi.ini`) needs PCRE: keep `libpcre2-dev` in the Dockerfile builder stage, or uWSGI prints `no internal routing support` and silently ignores those rules. `final-route-status` matches the exact status (`200`), not a regexp
